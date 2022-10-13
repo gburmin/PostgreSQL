@@ -121,7 +121,9 @@ WHERE name = 'russian';
 ```
 
 Теперь мы можем легко работать с данной выборкой, например, подсчитывая количество стримеров с тегом 'russian'
-`SELECT COUNT(*) FROM russian_streamers;`
+```sql
+SELECT COUNT(*) FROM russian_streamers;
+```
 
 Создадим второе представление:
 
@@ -135,7 +137,9 @@ ORDER BY streamed_in_month;
 ```
 
 Можем выбрать стримеров с худшими показателями
-`SELECT * FROM streamed_hours_of_partners LIMIT 3;`
+```sql
+SELECT * FROM streamed_hours_of_partners LIMIT 3;
+```
 
 Команды запросов в файле [7.View](7.View.TXT)
 
@@ -158,8 +162,10 @@ LANGUAGE SQL;
 
 Проверим работу функции с разными тегами
 
-`SELECT count_streams_with_selected_tag('russian');`
-`SELECT count_streams_with_selected_tag('english');`
+```sql
+SELECT count_streams_with_selected_tag('russian');
+SELECT count_streams_with_selected_tag('english');
+```
 
 Команды запросов в файле [8.Function](8.Function.TXT)
 
@@ -200,7 +206,9 @@ EXECUTE FUNCTION update_partnership_trigger();
 
 Проверим результат
 
-`UPDATE users SET partnership_id = 3 WHERE id = 1;`
+```sql
+UPDATE users SET partnership_id = 3 WHERE id = 1;
+```
 Возникает ошибка
 "ERROR:  User streamed less then 20 hours in month"
 
