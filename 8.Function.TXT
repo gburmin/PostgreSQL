@@ -1,0 +1,17 @@
+--На основе первого типа запроса создадим функцию, которая будет выводить число стримов с выбранным тегом
+
+CREATE FUNCTION count_streams_with_selected_tag(choosed_tag VARCHAR(20))
+RETURNS BIGINT AS
+$$
+SELECT COUNT(*)
+FROM users
+    JOIN streams ON users.id = streams.user_id
+    JOIN tags ON streams.tags_id = tags.id
+WHERE name = choosed_tag;
+$$
+LANGUAGE SQL;
+
+--Проверим работу функции с разными тегами
+
+SELECT count_streams_with_selected_tag('russian');
+SELECT count_streams_with_selected_tag('english');

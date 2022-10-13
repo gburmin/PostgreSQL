@@ -1,0 +1,110 @@
+--Таблица юзеров
+CREATE TABLE users (
+  id SERIAL PRIMARY KEY,
+  nickname VARCHAR(50) NOT NULL,
+  email VARCHAR(120) NOT NULL UNIQUE,
+  stream_key VARCHAR(40) NOT NULL UNIQUE,
+  partnership_id INT NOT NULL,
+);
+
+--Таблица профилей
+CREATE TABLE profiles (
+  user_id INT NOT NULL,
+  first_name VARCHAR(40),
+  last_name VARCHAR(40),
+  phone VARCHAR(20) NOT NULL UNIQUE,
+  avatar_photo_id INT,
+  banner_photo_id INT,
+  description VARCHAR(200),
+  created_at TIMESTAMP,
+  PRIMARY KEY(user_id)
+);
+
+-- Таблица статистики стримов
+CREATE TABLE streams_statistic(
+  user_id INT NOT NULL,
+  followers INT,
+  subscribers INT,
+  streamed_in_month INT,
+  PRIMARY KEY(user_id)
+);
+
+-- Таблица личных сообщений
+CREATE TABLE private_messages (
+  id SERIAL PRIMARY KEY,
+  from_user_id INT NOT NULL,
+  to_user_id INT NOT NULL,
+  body TEXT,
+  created_at TIMESTAMP
+);
+
+-- Таблица тегов
+CREATE TABLE tags (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(30) UNIQUE
+);
+
+-- Таблица подписок
+CREATE TABLE subscriptions (
+	id SERIAL PRIMARY KEY,
+	subscriber_user_id INT NOT NULL,
+	subscribe_to_id INT NOT NULL,
+	subscription_type_id INT NOT NULL,
+	created_at TIMESTAMP
+);
+
+-- Таблица типов подписок
+CREATE TABLE subscription_types (
+	id SERIAL PRIMARY KEY,
+	subscription_type TEXT NOT NULL
+);
+
+-- Таблица статуса деловых отношений с твичем
+CREATE TABLE partnerships (
+	id SERIAL PRIMARY KEY,
+	partnership_type TEXT NOT NULL
+);
+
+-- Таблица категорий
+CREATE TABLE categories (
+  id SERIAL PRIMARY KEY,
+  name VARCHAR(30) UNIQUE
+);
+
+--Таблица чатов
+CREATE TABLE chats(
+  id SERIAL PRIMARY KEY,
+  from_user_id INT NOT NULL,
+  to_user_id INT NOT NULL,
+  body TEXT NOT NULL,
+  created_at TIMESTAMP
+);
+
+--Таблица стримов
+CREATE TABLE streams(
+  id SERIAL PRIMARY KEY,
+  user_id INT NOT NULL,
+  category_id INT NOT NULL,
+  tags_id INT NOT NULL,
+  viewers INT,
+  created_at TIMESTAMP
+);
+
+-- Таблица фотографий
+CREATE TABLE photo (
+  id SERIAL PRIMARY KEY,
+  url VARCHAR(250) NOT NULL UNIQUE,
+  owner_id INT NOT NULL,
+  uploaded_at TIMESTAMP NOT NULL,
+  size INT NOT NULL
+);
+
+-- Таблица видео
+CREATE TABLE video (
+  id SERIAL PRIMARY KEY,
+  url VARCHAR(250) NOT NULL UNIQUE,
+  owner_id INT NOT NULL,
+  description VARCHAR(250) NOT NULL,
+  uploaded_at TIMESTAMP NOT NULL,
+  size INT NOT NULL
+);

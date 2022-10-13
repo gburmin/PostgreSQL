@@ -1,0 +1,31 @@
+-- Создание функции
+CREATE OR REPLACE FUNCTION update_partnership_trigger()
+RETURNS TRIGGER AS
+$$
+DECLARE is_found BOOLEAN;
+BEGIN
+is_found := EXISTS(
+    SELECT user_id FROM streams_statistic
+    LEFT JOIN users ON streams_statistic.user_id = users.id
+    JOIN partnerships ON users.partnership_id = partnerships.id
+WHERE partnership_type != 'full partner' AND streamed_in_month < 20
+ORDER BY streamed_in_month);
+IF is_found THEN
+RAISE EXCEPTION 'User streamed less then 20 hours in month';
+END IF;
+RETURN NEW;
+END
+$$
+LANGUAGE PLPGSQL;
+
+
+--Теперь можно создавать триггер
+
+CREATE TRIGGER update_partnership BEFORE UPDATE ON users
+FOR EACH ROW
+EXECUTE FUNCTION update_partnership_trigger();
+
+--Проверим результат
+
+UPDATE users SET partnership_id = 3 WHERE id = 1;
+--Возникает ошибка "ERROR:  User streamed less then 20 hours in month"

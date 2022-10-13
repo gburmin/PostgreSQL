@@ -1,0 +1,34 @@
+--Возьмем за основу первый запрос из прошлого пункта и преобразуем его:
+SELECT nickname FROM users
+    JOIN streams ON users.id = streams.user_id
+    JOIN tags ON streams.tags_id = tags.id
+WHERE name = 'russian';
+
+--Как мы можем видеть, он стал значительно проще и нагляднее. Также его гораздо легче расширить, чтобы включить дополнительную статистику. Например, подсчитаем количество стримов на русском и английском языках
+
+SELECT  tags.name, COUNT(*) FROM users
+    JOIN streams ON users.id = streams.user_id
+    JOIN tags ON streams.tags_id = tags.id
+WHERE name = 'russian' OR name= 'english'
+GROUP BY tags.name;
+
+--Аналогично поступим с вторым запросом заменив вложенные запросы на JOIN
+
+SELECT user_id,streamed_in_month FROM streams_statistic
+    LEFT JOIN users ON streams_statistic.user_id = users.id
+    JOIN partnerships ON users.partnership_id = partnerships.id
+WHERE partnership_type = 'full partner' AND streamed_in_month < 40
+ORDER BY streamed_in_month;
+
+--Изменим и его, выведя вместо не презентабельного user_id никнейм и имя пользователей с малым количеством часов в месяце
+
+SELECT
+    nickname,
+    first_name || ' ' || last_name AS first_and_last_name,
+    streamed_in_month
+    FROM streams_statistic
+    LEFT JOIN users ON streams_statistic.user_id = users.id
+    JOIN partnerships ON users.partnership_id = partnerships.id
+    JOIN profiles ON users.id = profiles.user_id
+WHERE partnership_type = 'full partner' AND streamed_in_month < 40
+ORDER BY streamed_in_month;

@@ -1,0 +1,21 @@
+--Так как подобные запросы могут использоваться весьма часто, может быть удобно обернуть их в представления.
+
+CREATE VIEW russian_streamers AS
+SELECT nickname FROM users
+    JOIN streams ON users.id = streams.user_id
+    JOIN tags ON streams.tags_id = tags.id
+WHERE name = 'russian';
+
+--Теперь мы можем легко работать с данной выборкой, например, подсчитывая количество стримеров с тегом 'russian'
+SELECT COUNT(*) FROM russian_streamers;
+
+--Создадим второе представление:
+CREATE VIEW streamed_hours_of_partners AS
+SELECT user_id,streamed_in_month FROM streams_statistic
+    LEFT JOIN users ON streams_statistic.user_id = users.id
+    JOIN partnerships ON users.partnership_id = partnerships.id
+WHERE partnership_type = 'full partner' AND streamed_in_month < 40
+ORDER BY streamed_in_month;
+
+--Можем выбрать стримеров с худшими показателями
+SELECT * FROM streamed_hours_of_partners LIMIT 3;

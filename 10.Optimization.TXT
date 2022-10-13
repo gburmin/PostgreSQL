@@ -1,0 +1,101 @@
+--Для начала нужно построить план выполнения запроса
+
+EXPLAIN ANALYZE SELECT nickname FROM users WHERE users.id in (
+	SELECT user_id FROM streams WHERE tags_id = (
+		SELECT id FROM tags WHERE name = 'russian');
+                                                         QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------
+ Hash Semi Join  (cost=10.63..14.15 rows=17 width=6) (actual time=0.195..0.281 rows=16 loops=1)
+   Hash Cond: (users.id = streams.user_id)
+   InitPlan 1 (returns $0)
+     ->  Index Scan using tags_name_key on tags  (cost=0.15..8.17 rows=1 width=4) (actual time=0.051..0.053 rows=1 loops=1)
+           Index Cond: ((name)::text = 'russian'::text)
+   ->  Seq Scan on users  (cost=0.00..3.00 rows=100 width=10) (actual time=0.020..0.067 rows=100 loops=1)
+   ->  Hash  (cost=2.25..2.25 rows=17 width=4) (actual time=0.145..0.146 rows=16 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Seq Scan on streams  (cost=0.00..2.25 rows=17 width=4) (actual time=0.077..0.119 rows=16 loops=1)
+               Filter: (tags_id = $0)
+               Rows Removed by Filter: 84
+ Planning Time: 2.566 ms
+ Execution Time: 0.481 ms
+(13 rows)
+
+
+
+--Чтобы улучшить запрос, зачастую лучше будет выполнять объединение таблиц с помощью JOIN
+
+EXPLAIN ANALYZE SELECT nickname FROM users
+	JOIN streams ON users.id = streams.user_id
+	JOIN tags ON streams.tags_id = tags.id
+WHERE name = 'russian';
+                                                            QUERY PLAN
+----------------------------------------------------------------------------------------------------------------------------------
+ Nested Loop  (cost=0.30..9.33 rows=1 width=6) (actual time=0.051..0.261 rows=16 loops=1)
+   ->  Nested Loop  (cost=0.16..9.01 rows=1 width=4) (actual time=0.039..0.171 rows=16 loops=1)
+         ->  Seq Scan on streams  (cost=0.00..2.00 rows=100 width=8) (actual time=0.011..0.031 rows=100 loops=1)
+         ->  Memoize  (cost=0.16..0.66 rows=1 width=4) (actual time=0.001..0.001 rows=0 loops=100)
+               Cache Key: streams.tags_id
+               Cache Mode: logical
+               Hits: 94  Misses: 6  Evictions: 0  Overflows: 0  Memory Usage: 1kB
+               ->  Index Scan using tags_pkey on tags  (cost=0.15..0.65 rows=1 width=4) (actual time=0.004..0.004 rows=0 loops=6)
+                     Index Cond: (id = streams.tags_id)
+                     Filter: ((name)::text = 'russian'::text)
+                     Rows Removed by Filter: 1
+   ->  Index Scan using users_pkey on users  (cost=0.14..0.32 rows=1 width=10) (actual time=0.005..0.005 rows=1 loops=16)
+         Index Cond: (id = streams.user_id)
+ Planning Time: 0.502 ms
+ Execution Time: 0.311 ms
+(15 rows)
+
+--Как мы можем заметить, время выполнения значительно улучшилось. Следующим шагом будет проверка и постройка индексов.
+
+
+
+
+twitch=> SELECT indexname FROM pg_indexes WHERE tablename = 'streams';
+  indexname
+--------------
+ streams_pkey
+(1 row)
+
+
+twitch=> SELECT indexname FROM pg_indexes WHERE tablename = 'tags';
+   indexname
+---------------
+ tags_pkey
+ tags_name_key
+(2 rows)
+
+
+--Остается только создать индекс для столбца поиска WHERE, т.е. для tags.name
+
+CREATE INDEX users_name_idx ON tags (name);
+
+--Осталось проверить 
+
+
+EXPLAIN ANALYZE SELECT nickname FROM users
+        JOIN streams ON users.id = streams.user_id
+        JOIN tags ON streams.tags_id = tags.id
+WHERE name = 'russian';
+                                                      QUERY PLAN
+-----------------------------------------------------------------------------------------------------------------------
+ Hash Join  (cost=3.75..7.30 rows=17 width=6) (actual time=0.114..0.181 rows=16 loops=1)
+   Hash Cond: (users.id = streams.user_id)
+   ->  Seq Scan on users  (cost=0.00..3.00 rows=100 width=10) (actual time=0.013..0.049 rows=100 loops=1)
+   ->  Hash  (cost=3.54..3.54 rows=17 width=4) (actual time=0.094..0.096 rows=16 loops=1)
+         Buckets: 1024  Batches: 1  Memory Usage: 9kB
+         ->  Hash Join  (cost=1.09..3.54 rows=17 width=4) (actual time=0.029..0.088 rows=16 loops=1)
+               Hash Cond: (streams.tags_id = tags.id)
+               ->  Seq Scan on streams  (cost=0.00..2.00 rows=100 width=8) (actual time=0.008..0.027 rows=100 loops=1)
+               ->  Hash  (cost=1.07..1.07 rows=1 width=4) (actual time=0.014..0.015 rows=1 loops=1)
+                     Buckets: 1024  Batches: 1  Memory Usage: 9kB
+                     ->  Seq Scan on tags  (cost=0.00..1.07 rows=1 width=4) (actual time=0.005..0.008 rows=1 loops=1)
+                           Filter: ((name)::text = 'russian'::text)
+                           Rows Removed by Filter: 5
+ Planning Time: 0.716 ms
+ Execution Time: 0.222 ms
+(15 rows)
+
+--Как мы можем видеть, ожидаемое время выполнение только выросло, хотя действительное уменьшилось на ~30%. 
+Это вполне ожидаемый результат, учитывая маленькие размеры наших таблиц.

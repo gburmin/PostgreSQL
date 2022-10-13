@@ -1,0 +1,12 @@
+--вывести никнейм пользователей, которые стримили на русском языке
+SELECT nickname FROM users WHERE users.id in (
+   SELECT user_id FROM streams WHERE tags_id = (
+     SELECT id FROM tags WHERE name = 'russian')
+ );
+
+--вывести user_id и количество простримленных часов партнеров твича, которые стримили меньше 20 часов
+SELECT user_id, streamed_in_month FROM streams_statistic WHERE user_id in
+	(SELECT id FROM users WHERE partnership_id in
+		(SELECT id FROM partnerships WHERE partnership_type = 'full partner'))
+AND streamed_in_month < 40
+ORDER BY streamed_in_month;
